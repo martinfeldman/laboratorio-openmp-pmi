@@ -1,0 +1,48 @@
+use std::sync::{Arc, Mutex};
+use std::thread;
+use reqwest;
+use serde_json::Value;
+
+fn main() {
+    // Crear un valor compartido para almacenar la respuesta de la API
+    let shared_response = Arc::new(Mutex::new(String::new()));
+
+    // Realizar la solicitud HTTP en el programa principal
+    let response = reqwest::blocking::get("https://catfact.ninja/breeds")
+        .expect("Error al llamar a la API")
+        .text()
+        .expect("Error al obtener el cuerpo de la respuesta");
+
+    // Almacenar la respuesta en la variable compartida
+    let mut shared_response = shared_response.lock().unwrap();
+    *shared_response = response.clone();
+
+    // Parsear el JSON en un valor genérico
+    let json_data: Value = serde_json::from_str(&response).expect("Error al parsear el JSON");
+
+    // Clonar los datos de "data" como un vector de valores JSON
+    let data_clone1 = json_data["data"].as_array().unwrap().clone();
+    let data_clone2 = json_data["data"].as_array().unwrap().clone();
+
+    // Crear el primer proceso
+    let thread1 = thread::spawn(move || {
+        for breed_info in &data_clone1 {
+            println!("Proceso 1: {:?}", breed_info);
+            // Pausa para simular trabajo
+            thread::sleep(std::time::Duration::from_secs(1));
+        }
+    });
+
+    // Crear el segundo proceso
+    let thread2 = thread::spawn(move || {
+        for breed_info in &data_clone2 {
+            println!("Proceso 2: {:?}", breed_info);
+            // Pausa para simular trabajo
+            thread::sleep(std::time::Duration::from_secs(1));
+        }
+    });
+
+    // Esperar a que ambos procesos terminen
+    thread1.join().unwrap();
+    thread2.join().unwrap();
+}

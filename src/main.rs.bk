@@ -1,0 +1,31 @@
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    // Crear un valor compartido
+    let shared_data = Arc::new(Mutex::new(0));
+
+    // Clonar el valor compartido para cada proceso
+    let shared_data_clone1 = Arc::clone(&shared_data);
+    let shared_data_clone2 = Arc::clone(&shared_data);
+
+    // Crear el primer proceso
+    let thread1 = thread::spawn(move || {
+        // Acceder al valor compartido de forma segura con un Mutex
+        let mut data = shared_data_clone1.lock().unwrap();
+        *data += 1;
+        println!("Proceso 1: Valor compartido = {}", *data);
+    });
+
+    // Crear el segundo proceso
+    let thread2 = thread::spawn(move || {
+        // Acceder al valor compartido de forma segura con un Mutex
+        let mut data = shared_data_clone2.lock().unwrap();
+        *data += 2;
+        println!("Proceso 2: Valor compartido = {}", *data);
+    });
+
+    // Esperar a que ambos procesos terminen
+    thread1.join().unwrap();
+    thread2.join().unwrap();
+}
